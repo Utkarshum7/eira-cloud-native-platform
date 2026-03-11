@@ -1,0 +1,17 @@
+# AWS Configuration
+aws_region = "us-east-1"
+
+# EKS Cluster Configuration
+cluster_name = "eira-cluster"
+environment  = "dev"
+
+# EKS Node Group Configuration
+node_group_instance_types = ["t3.medium"]
+node_group_desired_size   = 2
+node_group_max_size       = 4
+node_group_min_size       = 1
+
+# RDS Configuration
+db_instance_class         = "db.t3.micro"
+db_allocated_storage      = 20
+db_max_allocated_storage  = 100

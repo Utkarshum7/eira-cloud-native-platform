@@ -1,0 +1,32 @@
+# Environment files
+.env
+.env.*
+
+# Logs
+*.log
+build.log
+
+# Kubernetes / binaries
+kubectl
+minikube*
+*.tar
+
+# Node
+node_modules/
+
+# Flutter
+.dart_tool/
+build/
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

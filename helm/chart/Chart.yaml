@@ -1,0 +1,19 @@
+apiVersion: v2
+name: healthops-chart
+description: Complete Helm chart for Eira HealthOps multi-tier application
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - healthcare
+  - flutter
+  - node.js
+  - kubernetes
+  - cloud-native
+maintainers:
+  - name: DevOps Team
+    email: devops@bock-health.com
+home: https://github.com/BOCK-HEALTH/healthops
+sources:
+  - https://github.com/BOCK-HEALTH/healthops
+dependencies: []

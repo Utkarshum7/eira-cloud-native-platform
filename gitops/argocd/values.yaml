@@ -1,0 +1,77 @@
+# ArgoCD Values for Helm Installation
+
+controller:
+  replicas: 2
+  metrics:
+    enabled: true
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+server:
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 4
+  metrics:
+    enabled: true
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  service:
+    type: LoadBalancer
+
+repoServer:
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 4
+  metrics:
+    enabled: true
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+dex:
+  enabled: true
+  metrics:
+    enabled: true
+
+applicationSet:
+  enabled: true
+  replicas: 2
+  metrics:
+    enabled: true
+
+notifications:
+  enabled: true
+  metrics:
+    enabled: true
+
+redis:
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+configs:
+  secret:
+    createSecret: true
+  cm:
+    admin.enabled: "false"
+    users.anonymous.enabled: "false"

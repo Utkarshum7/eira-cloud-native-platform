@@ -1,0 +1,108 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: argocd
+  labels:
+    name: argocd
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: healthops
+  namespace: argocd
+spec:
+  project: default
+  
+  source:
+    repoURL: https://github.com/BOCK-HEALTH/healthops
+    targetRevision: main
+    path: helm/healthops-chart
+    helm:
+      releaseName: healthops
+      values: |
+        global:
+          domain: healthops.example.com
+          environment: production
+          imagePullPolicy: IfNotPresent
+        
+        frontend:
+          enabled: true
+          replicaCount: 2
+          image:
+            repository: ghcr.io/bock-health/healthops-frontend
+            tag: latest
+          autoscaling:
+            enabled: true
+            minReplicas: 2
+            maxReplicas: 5
+            targetCPUUtilizationPercentage: 70
+        
+        backend:
+          enabled: true
+          replicaCount: 2
+          image:
+            repository: ghcr.io/bock-health/healthops-backend
+            tag: latest
+          autoscaling:
+            enabled: true
+            minReplicas: 2
+            maxReplicas: 5
+            targetCPUUtilizationPercentage: 70
+        
+        postgres:
+          enabled: true
+          image:
+            repository: postgres
+            tag: "15-alpine"
+          storage:
+            size: 20Gi
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: production
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  revisionHistoryLimit: 10
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: healthops-project
+  namespace: argocd
+spec:
+  description: HealthOps Application Project
+  
+  sourceRepos:
+  - 'https://github.com/BOCK-HEALTH/healthops'
+  
+  destinations:
+  - namespace: 'production'
+    server: https://kubernetes.default.svc
+  - namespace: 'staging'
+    server: https://kubernetes.default.svc
+  
+  clusterResourceWhitelist:
+  - group: ''
+    kind: Namespace
+  - group: 'apiextensions.k8s.io'
+    kind: CustomResourceDefinition
+  
+  namespaceResourceBlacklist:
+  - group: ''
+    kind: ResourceQuota
+  - group: ''
+    kind: LimitRange

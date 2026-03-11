@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: eira-frontend-service
+  labels:
+    app: eira-frontend
+spec:
+  selector:
+    app: eira-frontend
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  type: ClusterIP

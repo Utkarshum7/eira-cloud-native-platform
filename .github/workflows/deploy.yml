@@ -1,0 +1,92 @@
+name: Deploy to Kubernetes
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'helm/**'
+      - 'k8s/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  HELM_VERSION: v3.13.0
+  KUBECTL_VERSION: 1.28.0
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: ${{ env.KUBECTL_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Update kubectl config
+        run: |
+          aws eks update-kubeconfig --region ${{ secrets.AWS_REGION }} --name ${{ secrets.EKS_CLUSTER_NAME }}
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: ${{ env.HELM_VERSION }}
+
+      - name: Add Helm repositories
+        run: |
+          helm repo add stable https://charts.helm.sh/stable
+          helm repo update
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install healthops ./helm/chart \
+            --namespace production \
+            --create-namespace \
+            --values ./helm/chart/values.yaml \
+            --set backend.secrets.DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+            --set postgres.secrets.POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
+            --set monitoring.grafana.adminPassword=${{ secrets.GRAFANA_PASSWORD }}
+
+      - name: Verify deployment
+        run: |
+          kubectl rollout status deployment/backend -n production --timeout=5m
+          kubectl rollout status deployment/frontend -n production --timeout=5m
+
+      - name: Run smoke tests
+        run: |
+          # Wait for services to be ready
+          kubectl wait --for=condition=ready pod -l app=backend -n production --timeout=300s
+          kubectl wait --for=condition=ready pod -l app=frontend -n production --timeout=300s
+          
+          # Test backend health
+          kubectl run smoke-test --image=curlimages/curl --restart=Never -- \
+            curl http://backend.production.svc.cluster.local:8080/api || true
+
+      - name: Slack notification
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: 'Deployment to ${{ github.event.inputs.environment || "staging" }} ${{ job.status }}'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}
