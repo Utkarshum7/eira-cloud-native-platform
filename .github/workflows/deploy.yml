@@ -1,13 +1,6 @@
 name: Deploy to Kubernetes
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'helm/**'
-      - 'k8s/**'
-      - '.github/workflows/deploy.yml'
   workflow_dispatch:
     inputs:
       environment:

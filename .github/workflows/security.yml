@@ -9,12 +9,12 @@ on:
     branches:
       - main
   schedule:
-    # Run daily at 2 AM UTC
     - cron: '0 2 * * *'
 
 jobs:
   dependency-check:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     
     steps:
       - name: Checkout code
@@ -52,6 +52,7 @@ jobs:
 
   docker-scan:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     
     steps:
       - name: Checkout code
