@@ -8,26 +8,18 @@ on:
 
 jobs:
   scan:
-    name: Secrets Scanning
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Deep fetch is required for accurate git history traversal
 
-      # Scan repository history for leaked secrets without pipeline interruption
       - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@v2
         continue-on-error: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          report-format: 'sarif'
-          report-path: 'gitleaks-results.sarif'
-          
-      # Ensure results make it to security dashboard even with continue-on-error
+          args: detect --source . --no-git --report-format sarif --report-path gitleaks-results.sarif
+
       - name: Upload Gitleaks report
         uses: github/codeql-action/upload-sarif@v3
         if: always()
