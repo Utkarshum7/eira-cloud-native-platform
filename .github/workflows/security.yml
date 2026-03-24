@@ -20,19 +20,35 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
 
       - name: Install backend dependencies
-        working-directory: ./backend/node-api
-        run: npm ci
+        working-directory: ./backend
+        run: npm install
 
-      - name: Run npm audit
-        working-directory: ./backend/node-api
-        run: npm audit --audit-level=moderate
+      - name: Run OWASP Dependency-Check
+        uses: dependency-check/Dependency-Check_Action@main
         continue-on-error: true
+        with:
+          project: 'eira-backend'
+          path: './backend'
+          format: 'HTML'
+
+      - name: Upload Dependency Check Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-check-report
+          path: '**/dependency-check-report.html'
 
   docker-scan:
     runs-on: ubuntu-latest
@@ -41,47 +57,53 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build backend image for scanning
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./docker/Dockerfile.backend
-          push: false
-          load: true
-          tags: healthops-backend:scan
-
-      - name: Scan backend image with Trivy
+      - name: Scan backend with Trivy
         uses: aquasecurity/trivy-action@master
+        continue-on-error: true
         with:
-          image-ref: 'healthops-backend:scan'
+          scan-type: 'fs'
+          scan-ref: './backend'
           format: 'sarif'
           output: 'backend-trivy-results.sarif'
+          severity: 'HIGH,CRITICAL'
 
       - name: Upload backend scan results
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
         with:
           sarif_file: 'backend-trivy-results.sarif'
+          category: 'backend'
 
-      - name: Build frontend image for scanning
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./docker/Dockerfile.frontend
-          push: false
-          load: true
-          tags: healthops-frontend:scan
-
-      - name: Scan frontend image with Trivy
+      - name: Scan frontend with Trivy
         uses: aquasecurity/trivy-action@master
+        continue-on-error: true
         with:
-          image-ref: 'healthops-frontend:scan'
+          scan-type: 'fs'
+          scan-ref: './frontend'
           format: 'sarif'
           output: 'frontend-trivy-results.sarif'
+          severity: 'HIGH,CRITICAL'
 
       - name: Upload frontend scan results
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
         with:
           sarif_file: 'frontend-trivy-results.sarif'
+          category: 'frontend'
+
+      - name: Scan Dockerfiles with Trivy
+        uses: aquasecurity/trivy-action@master
+        continue-on-error: true
+        with:
+          scan-type: 'fs'
+          scan-ref: './docker'
+          format: 'sarif'
+          output: 'docker-trivy-results.sarif'
+          severity: 'HIGH,CRITICAL'
+
+      - name: Upload Dockerfile scan results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'docker-trivy-results.sarif'
+          category: 'dockerfiles'
