@@ -19,7 +19,8 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: ${{ github.event.inputs.environment || 'staging' }}
+    environment: ${{ github.event.inputs.environment }}
+    timeout-minutes: 15
     
     steps:
       - name: Checkout code
@@ -81,5 +82,5 @@ jobs:
         uses: 8398a7/action-slack@v3
         with:
           status: ${{ job.status }}
-          text: 'Deployment to ${{ github.event.inputs.environment || "staging" }} ${{ job.status }}'
+          text: 'Deployment to ${{ github.event.inputs.environment }} ${{ job.status }}'
           webhook_url: ${{ secrets.SLACK_WEBHOOK }}

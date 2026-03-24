@@ -11,6 +11,10 @@ jobs:
     name: Secrets Scanning
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
     
     steps:
       - name: Checkout repository
@@ -19,9 +23,11 @@ jobs:
       - name: Run Gitleaks
         uses: gitleaks/gitleaks-action@v2
         continue-on-error: true
-        with:
-          args: detect --source . --no-git --exit-code 0 --report-format sarif --report-path gitleaks-results.sarif
-          
+
+      - name: Normalize SARIF Name
+        if: always()
+        run: mv results.sarif gitleaks-results.sarif || echo 'SARIF file absent.'
+
       - name: Upload Gitleaks report
         uses: github/codeql-action/upload-sarif@v3
         if: always()
